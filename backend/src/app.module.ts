@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 import { envValidationSchema } from './config/env.validation';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { envValidationSchema } from './config/env.validation';
         synchronize: false, // schema is owned by migrations, never auto-sync
       }),
     }),
+    UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
