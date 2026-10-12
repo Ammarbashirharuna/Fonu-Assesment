@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
+# Go
+reporting-go/bin/
+*.exe
