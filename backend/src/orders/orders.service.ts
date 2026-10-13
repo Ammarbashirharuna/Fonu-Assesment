@@ -148,6 +148,18 @@ export class OrdersService {
     return this.findOne(id, actor);
   }
 
+  /** Admin-only. Only cancelled orders (stock already restored) may be deleted. */
+  async remove(id: string) {
+    const order = await this.orders.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== OrderStatus.CANCELLED) {
+      throw new ConflictException(
+        `Only cancelled orders can be deleted (current status: ${order.status})`,
+      );
+    }
+    await this.orders.delete(id); // order_items rows go with it (ON DELETE CASCADE)
+  }
+
   private async lockOrder(em: EntityManager, id: string, actor: AuthUser) {
     const order = await em.findOne(Order, { where: { id }, lock: { mode: 'pessimistic_write' } });
     if (!order || (actor.role !== Role.ADMIN && order.userId !== actor.id)) {

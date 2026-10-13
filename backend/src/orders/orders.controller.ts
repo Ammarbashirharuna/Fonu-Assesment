@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -50,5 +51,12 @@ export class OrdersController {
   @HttpCode(200)
   cancel(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthedRequest) {
     return this.orders.cancel(id, req.user);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(204)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.remove(id);
   }
 }
