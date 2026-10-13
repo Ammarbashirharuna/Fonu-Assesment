@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { envValidationSchema } from './config/env.validation';
 import { OrdersModule } from './orders/orders.module';
+import { ReportsModule } from './reports/reports.module';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
 
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     ProductsModule,
     OrdersModule,
+    ReportsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
