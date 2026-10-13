@@ -25,17 +25,29 @@ export default function Login() {
   };
 
   return (
-    <form className="card" style={{ maxWidth: 360, margin: '40px auto' }} onSubmit={submit}>
-      <h2>{mode === 'login' ? 'Sign in' : 'Create account'}</h2>
-      {error && <div className="error">{error}</div>}
-      <p><input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required /></p>
-      <p><input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required /></p>
-      <div className="row">
-        <button disabled={busy}>{busy ? '...' : mode === 'login' ? 'Login' : 'Register'}</button>
-        <button type="button" className="secondary" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-          {mode === 'login' ? 'Need an account?' : 'Have an account?'}
-        </button>
-      </div>
-    </form>
+    <div className="auth">
+      <section className="hero">
+        <h1>Inventory and orders, <span>made effortless.</span></h1>
+        <p>Browse products, place orders with real-time stock safety, and track everything in one clean workspace.</p>
+        <div className="chips">
+          <span className="chip">Oversell-proof checkout</span>
+          <span className="chip">Role-based access</span>
+          <span className="chip">Live sales insights</span>
+        </div>
+      </section>
+      <form className="card" onSubmit={submit}>
+        <h2>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
+        <p className="muted">{mode === 'login' ? 'Sign in to continue.' : 'It takes less than a minute.'}</p>
+        {error && <div className="error">{error}</div>}
+        <p><input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required /></p>
+        <p><input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required /></p>
+        <div className="row">
+          <button disabled={busy} style={{ flex: 1 }}>{busy ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+          <button type="button" className="secondary" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+            {mode === 'login' ? 'Register' : 'Sign in'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

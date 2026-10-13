@@ -4,7 +4,7 @@ import { api } from './api';
 interface User { email: string; role: 'admin' | 'customer' }
 interface AuthCtx {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, admin?: boolean) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -24,8 +24,8 @@ export const useAuth = () => useContext(Ctx);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => decode(localStorage.getItem('token')));
 
-  const login = async (email: string, password: string) => {
-    const { data } = await api.post('/auth/login', { email, password });
+  const login = async (email: string, password: string, admin = false) => {
+    const { data } = await api.post(admin ? '/auth/admin/login' : '/auth/login', { email, password });
     localStorage.setItem('token', data.access_token);
     setUser(decode(data.access_token));
   };

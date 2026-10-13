@@ -1,8 +1,13 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Role, User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+
+const ADMIN_TOKEN_TTL_SECONDS = 30 * 60;
+// compared against when the email is unknown, so timing doesn't reveal which emails exist
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 
 @Injectable()
 export class AuthService {
@@ -21,13 +26,30 @@ export class AuthService {
     return { id: user.id, email: user.email, role: user.role };
   }
 
+  /** Customer entry point: admin credentials are rejected here. */
   async login(dto: LoginDto) {
+    const user = await this.authenticate(dto, Role.CUSTOMER);
+    return { access_token: await this.sign(user) };
+  }
+
+  /** Admin entry point: customer credentials are rejected here. Short-lived token. */
+  async adminLogin(dto: LoginDto) {
+    const user = await this.authenticate(dto, Role.ADMIN);
+    return { access_token: await this.sign(user, ADMIN_TOKEN_TTL_SECONDS) };
+  }
+
+  private async authenticate(dto: LoginDto, expectedRole: Role): Promise<User> {
     const user = await this.users.findByEmailWithPassword(dto.email);
-    // identical error for unknown email and wrong password: no user enumeration
-    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    const passwordOk = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
+    // one generic error for: unknown email, wrong password, wrong entry point
+    if (!user || !passwordOk || user.role !== expectedRole) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    return user;
+  }
+
+  private sign(user: User, expiresIn?: number) {
     const payload = { sub: user.id, email: user.email, role: user.role };
-    return { access_token: await this.jwt.signAsync(payload) };
+    return this.jwt.signAsync(payload, expiresIn ? { expiresIn } : undefined);
   }
 }

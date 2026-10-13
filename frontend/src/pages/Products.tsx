@@ -1,86 +1,70 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, errMsg, type Order, type Page, type Product } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import { PackageSearch, Plus, Search } from 'lucide-react';
+import { api, errMsg, type Page, type Product } from '../api';
+import { useCart } from '../cart';
+import { tile } from '../tile';
 
 export default function Products() {
-  const qc = useQueryClient();
+  const { lines, add } = useCart();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [cart, setCart] = useState<Record<string, { p: Product; qty: number }>>({});
-  const [msg, setMsg] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['products', search, page],
-    queryFn: async () => (await api.get<Page<Product>>('/products', { params: { search: search || undefined, page, limit: 12 } })).data,
+    queryFn: async () =>
+      (await api.get<Page<Product>>('/products', { params: { search: search || undefined, page, limit: 12 } })).data,
   });
 
-  const add = (p: Product) =>
-    setCart((c) => {
-      const qty = Math.min((c[p.id]?.qty ?? 0) + 1, p.stock);
-      return { ...c, [p.id]: { p, qty } };
-    });
-  const remove = (id: string) => setCart((c) => { const n = { ...c }; delete n[id]; return n; });
-
-  const lines = Object.values(cart);
-  const total = lines.reduce((s, l) => s + l.p.price * l.qty, 0);
-
-  const order = useMutation({
-    mutationFn: async () =>
-      (await api.post<Order>('/orders', { items: lines.map((l) => ({ productId: l.p.id, quantity: l.qty })) })).data,
-    onSuccess: (o) => {
-      setCart({});
-      setMsg({ type: 'ok', text: `Order placed (total ${o.total.toFixed(2)})` });
-      qc.invalidateQueries({ queryKey: ['products'] });
-      qc.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (e) => {
-      setMsg({ type: 'error', text: errMsg(e) });
-      qc.invalidateQueries({ queryKey: ['products'] });
-    },
-  });
+  const inCartQty = (id: string) => lines.find((l) => l.product.id === id)?.qty ?? 0;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16 }}>
-      <section>
-        <input placeholder="Search products..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-        <br /><br />
-        {msg && <div className={msg.type}>{msg.text}</div>}
-        {isLoading && <p>Loading...</p>}
-        {error && <div className="error">{errMsg(error)}</div>}
-        <div className="grid">
-          {data?.data.map((p) => (
-            <div className="card" key={p.id}>
-              <strong>{p.name}</strong>
-              <p className="muted">{p.description}</p>
-              <p>${p.price.toFixed(2)} <span className="muted">· {p.stock} in stock</span></p>
-              <button disabled={p.stock === 0 || (cart[p.id]?.qty ?? 0) >= p.stock} onClick={() => add(p)}>
-                {p.stock === 0 ? 'Out of stock' : 'Add to cart'}
-              </button>
-            </div>
-          ))}
+    <>
+      <div className="page-head">
+        <div><h2>Shop</h2><p className="muted">Live stock, safe checkout.</p></div>
+        <div className="search">
+          <Search size={16} />
+          <input placeholder="Search products" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        {data && (
-          <div className="row">
-            <button className="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-            <span className="muted">Page {data.meta.page} of {Math.max(data.meta.totalPages, 1)}</span>
-            <button className="secondary" disabled={page >= data.meta.totalPages} onClick={() => setPage(page + 1)}>Next</button>
-          </div>
-        )}
-      </section>
-      <aside className="card" style={{ alignSelf: 'start' }}>
-        <h3>Cart</h3>
-        {lines.length === 0 && <p className="muted">Empty</p>}
-        {lines.map(({ p, qty }) => (
-          <div className="row" key={p.id} style={{ justifyContent: 'space-between' }}>
-            <span>{p.name} × {qty}</span>
-            <button className="secondary" onClick={() => remove(p.id)}>x</button>
-          </div>
-        ))}
-        <p><strong>Total: ${total.toFixed(2)}</strong></p>
-        <button disabled={!lines.length || order.isPending} onClick={() => order.mutate()}>
-          {order.isPending ? 'Placing...' : 'Place order'}
-        </button>
-      </aside>
-    </div>
+      </div>
+
+      {error && <div className="error">{errMsg(error)}</div>}
+      {isLoading && (
+        <div className="grid">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 250 }} />)}</div>
+      )}
+      {data?.data.length === 0 && <div className="empty"><PackageSearch size={36} /><p>No products found.</p></div>}
+
+      <div className="grid">
+        {data?.data.map((p) => {
+          const q = inCartQty(p.id);
+          return (
+            <div className="card product" key={p.id}>
+              <div className="thumb" style={tile(p.name)}>{p.name[0]?.toUpperCase()}</div>
+              <div className="row" style={{ justifyContent: 'space-between', marginTop: 14 }}>
+                <strong>{p.name}</strong>
+                <span className="price">${p.price.toFixed(2)}</span>
+              </div>
+              <p className="muted clamp">{p.description || 'No description.'}</p>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <span className={`stock ${p.stock === 0 ? 'out' : p.stock <= 5 ? 'low' : ''}`}>
+                  {p.stock === 0 ? 'Out of stock' : p.stock <= 5 ? `Only ${p.stock} left` : `${p.stock} in stock`}
+                </span>
+                <button disabled={p.stock === 0 || q >= p.stock} onClick={() => add(p)}>
+                  <Plus size={15} />{q ? `Add (${q})` : 'Add'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {data && data.meta.totalPages > 1 && (
+        <div className="row pager">
+          <button className="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
+          <span className="muted">Page {data.meta.page} of {data.meta.totalPages}</span>
+          <button className="secondary" disabled={page >= data.meta.totalPages} onClick={() => setPage(page + 1)}>Next</button>
+        </div>
+      )}
+    </>
   );
 }

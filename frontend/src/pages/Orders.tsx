@@ -39,7 +39,7 @@ export default function Orders() {
         </select>
       </div>
       {error && <div className="error">{error}</div>}
-      {orders.isLoading && <p>Loading...</p>}
+      {orders.isLoading && [0,1,2].map((i) => <div key={i} className="skeleton" style={{ height: 120, marginBottom: 14 }} />)}
       {orders.error && <div className="error">{errMsg(orders.error)}</div>}
       {orders.data?.data.length === 0 && <p className="muted">No orders yet.</p>}
       {orders.data?.data.map((o) => (
