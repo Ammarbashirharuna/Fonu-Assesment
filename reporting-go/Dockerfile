@@ -5,7 +5,9 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/reporting .
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM alpine:3.20
+RUN adduser -D -u 10001 app
+USER app
 COPY --from=build /out/reporting /reporting
 EXPOSE 8090
 ENTRYPOINT ["/reporting"]
