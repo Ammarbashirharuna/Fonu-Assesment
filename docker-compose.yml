@@ -17,5 +17,48 @@ services:
       timeout: 5s
       retries: 10
 
+  reporting:
+    build: ./reporting-go
+    restart: unless-stopped
+    environment:
+      REPORTING_PORT: "8090"
+      INTERNAL_API_KEY: ${REPORTING_API_KEY}
+    # no published port: only the backend can reach it on the compose network
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      reporting:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      REPORTING_URL: http://reporting:8090
+      REPORTING_API_KEY: ${REPORTING_API_KEY}
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:3000/api/v1
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8088}:80"
+
 volumes:
   pgdata:
