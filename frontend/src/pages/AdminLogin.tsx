@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth';
 import { errMsg } from '../api';
+import PasswordInput from '../components/PasswordInput';
 
 export default function AdminLogin() {
   const { user, login } = useAuth();
@@ -29,7 +30,7 @@ export default function AdminLogin() {
       <p className="muted">Restricted access. Authorised staff only.</p>
       {error && <div className="error">{error}</div>}
       <p><input type="email" placeholder="Admin email" value={email} onChange={(e) => setEmail(e.target.value)} required /></p>
-      <p><input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required /></p>
+      <p><PasswordInput value={password} onChange={setPassword} /></p>
       <button disabled={busy} style={{ width: '100%' }}>{busy ? 'Verifying...' : 'Sign in'}</button>
     </form>
   );

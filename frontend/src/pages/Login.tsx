@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { errMsg } from '../api';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const { user, login, register } = useAuth();
@@ -40,7 +41,7 @@ export default function Login() {
         <p className="muted">{mode === 'login' ? 'Sign in to continue.' : 'It takes less than a minute.'}</p>
         {error && <div className="error">{error}</div>}
         <p><input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required /></p>
-        <p><input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required /></p>
+        <p><PasswordInput value={password} onChange={setPassword} placeholder="Password (min 8 chars)" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} /></p>
         <div className="row">
           <button disabled={busy} style={{ flex: 1 }}>{busy ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
           <button type="button" className="secondary" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>

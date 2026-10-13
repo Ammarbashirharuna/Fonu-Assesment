@@ -147,3 +147,10 @@ input.qty::-webkit-inner-spin-button { display: none; }
 .link-center { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 12px; color: var(--g-700); font-size: 14px; font-weight: 600; text-decoration: none; }
 .mini.sm { width: 36px; height: 36px; border-radius: 10px; font-size: 14px; }
 .cart-btn .count { background: var(--g-500); color: var(--g-900); }
+
+/* ---------- password field ---------- */
+.pw { position: relative; }
+.pw input { padding-right: 46px; }
+.pw-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); padding: 7px 8px; background: transparent;
+  color: var(--muted); box-shadow: none; border-radius: 10px; }
+.pw-toggle:hover:not(:disabled) { background: var(--g-50); color: var(--g-700); transform: translateY(-50%); filter: none; }
