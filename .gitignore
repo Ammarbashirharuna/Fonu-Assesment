@@ -10,3 +10,4 @@ coverage/
 # Go
 reporting-go/bin/
 *.exe
+*.tsbuildinfo

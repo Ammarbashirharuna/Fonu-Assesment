@@ -24,7 +24,7 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed": "ts-node src/database/seed.ts",
-    "test:e2e:db": "DB_NAME=inventory_test npm run migration:run && DB_NAME=inventory_test npm run test:e2e"
+    "test:e2e:db": "docker compose -f ../docker-compose.yml exec -T postgres psql -U inventory -d postgres -c 'CREATE DATABASE inventory_test' 2>/dev/null || true; DB_NAME=inventory_test npm run migration:run && DB_NAME=inventory_test npm run test:e2e"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

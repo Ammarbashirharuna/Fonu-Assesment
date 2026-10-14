@@ -19,36 +19,54 @@ React (Vite, TanStack Query)  ──►  NestJS API  ──►  PostgreSQL
 | `reporting-go/` | Stateless Gin service: order summary (count, revenue, AOV, status split, top products) |
 
 ## Quick start (Docker)
-
-Requires Docker with Compose v2.
+Requires Docker with Compose v2. **No other setup and no `.env` file needed.**
 
 ```bash
 git clone <repo-url> && cd inventory-orders
-cp .env.example .env        # then edit secrets
-docker compose up -d --build
+docker compose up --build
 ```
 
-- App: http://localhost:8088
-- API: http://localhost:3000/api/v1
-- Admin console: http://localhost:8088/admin/login (credentials = `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`)
-- Customers register themselves at `/login`.
+The first build takes a few minutes. When the logs show `Nest application successfully started`, open:
 
-Migrations run automatically when the API container starts. The Go service is not published to the host; only the API can reach it.
+| What | URL | Credentials |
+|---|---|---|
+| Storefront | http://localhost:8088 | Register a customer on the login page |
+| Admin console | http://localhost:8088/admin/login | `admin@example.com` / `Admin12345` |
+| API | http://localhost:3000/api/v1 | JWT from the login endpoints |
+
+These are **demo credentials and secrets**, set as defaults in `docker-compose.yml` for easy review. Override any of them by copying `.env.example` to `.env`.
+
+On start the API container applies migrations, seeds the admin (idempotent), then boots. The Go service is not published to the host; only the API can reach it. Stop with `Ctrl+C`; wipe all data with `docker compose down -v`. If a port is taken, set `FRONTEND_PORT` or `POSTGRES_PORT` in `.env`.
+
+**What to try:** register a customer, add products to the cart, place an order, cancel it and watch stock return. Then sign in as admin: add and edit products, confirm orders, and open **Insights** (computed by the Go service).
+
+## How the brief is covered
+
+| Requirement | Where |
+|---|---|
+| REST API for products and orders (CRUD) | `backend/src/products`, `backend/src/orders` |
+| PostgreSQL, schema, migrations | `backend/src/database/migrations` (`synchronize: false`) |
+| JWT with admin and customer roles | `backend/src/auth` (`JwtAuthGuard`, `RolesGuard`, `@Roles()`) |
+| Validation and error handling | global `ValidationPipe` + `AllExceptionsFilter` |
+| Browse, order, history UI | `frontend/src/pages` (Shop, Cart, Orders) |
+| Admin: add/edit products, incoming orders | Products modal, All orders (confirm, cancel, delete) |
+| State management and API error handling | TanStack Query, axios interceptor, toasts |
+| Go microservice | `reporting-go/`, called by `GET /reports/summary` |
+| Backend tests for the order flow | `backend/src/orders/orders.service.spec.ts`, `backend/test/orders.e2e-spec.ts` |
 
 ## Local development
-
 ```bash
-docker compose up -d postgres                       # database only
+docker compose up -d postgres                        # database only (host port 5433)
 
 cd backend && cp .env.example .env && npm ci
-npm run migration:run && npm run start:dev           # :3000
+npm run migration:run && npm run seed && npm run start:dev    # :3000
 
-cd ../reporting-go && INTERNAL_API_KEY=devkey go run .   # :8090 (REPORTING_PORT to change)
+cd ../reporting-go && INTERNAL_API_KEY=devkey go run .         # :8090
 
-cd ../frontend && cp .env.example .env && npm ci && npm run dev   # :5173
+cd ../frontend && cp .env.example .env && npm ci && npm run dev    # :5173
 ```
 
-Backend `.env` needs `REPORTING_URL=http://localhost:8090` and `REPORTING_API_KEY=devkey` (must match the Go service key).
+In `backend/.env`, set `REPORTING_URL=http://localhost:8090` and `REPORTING_API_KEY=devkey` (it must match the Go service key).
 
 ## Configuration
 
@@ -99,15 +117,14 @@ Placing an order is **one DB transaction**:
 Cancelling restores stock in a transaction. Status flow: `pending → confirmed` (admin) or `pending → cancelled` (owner/admin).
 
 ## Tests
-
 ```bash
-cd backend
-npm test                 # unit tests: totals, merging, stock rules, cancel/restore, ownership
-npm run test:e2e:db      # e2e against real Postgres (separate inventory_test DB)
+cd backend && npm ci
+npm test               # 11 unit tests: totals, merging, stock rules, cancel/restore, ownership
+npm run test:e2e:db    # 6 e2e tests on real Postgres (needs `docker compose up -d postgres`)
 cd ../reporting-go && go test ./...
 ```
 
-The e2e suite includes an oversell race: 10 parallel orders against 5 units must yield exactly 5 × `201`, 5 × `409` and final stock `0`.
+`test:e2e:db` creates a separate `inventory_test` database, migrates it, and runs the suite, so your dev data is untouched. The suite includes an oversell race: 10 parallel orders against 5 units must give exactly 5 x `201`, 5 x `409` and final stock `0`.
 
 ## Assumptions and trade-offs
 
@@ -120,6 +137,7 @@ The e2e suite includes an oversell race: 10 parallel orders against 5 units must
 - **Reporting is isolated and fails soft.** The API sends non-cancelled orders (capped at 5,000) to the Go service with a 3 s timeout and a shared key. If Go is down, `/reports/summary` returns `503` and the rest of the API is unaffected.
 - **JWT in localStorage**: simple, but exposed to XSS. Chosen for scope.
 - **Offset pagination** everywhere; fine at this scale.
+- **CORS is open** and demo secrets ship as defaults, which is convenient for review. Production would restrict origins and require real secrets.
 
 ## With more time
 
