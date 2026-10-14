@@ -36,7 +36,7 @@ The first build takes a few minutes. When the logs show `Nest application succes
 
 These are **demo credentials and secrets**, set as defaults in `docker-compose.yml` for easy review. Override any of them by copying `.env.example` to `.env`.
 
-On start the API container applies migrations, seeds the admin (idempotent), then boots. The Go service is not published to the host; only the API can reach it. Stop with `Ctrl+C`; wipe all data with `docker compose down -v`. If a port is taken, set `FRONTEND_PORT` or `POSTGRES_PORT` in `.env`.
+On start the API container applies migrations, seeds the admin and a small demo catalogue (both idempotent: only when missing), then boots. The Go service is not published to the host; only the API can reach it. Stop with `Ctrl+C`; wipe all data with `docker compose down -v`. If a port is taken, set `FRONTEND_PORT` or `POSTGRES_PORT` in `.env`.
 
 **What to try:** register a customer, add products to the cart, place an order, cancel it and watch stock return. Then sign in as admin: add and edit products, confirm orders, and open **Insights** (computed by the Go service).
 
