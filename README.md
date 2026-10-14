@@ -22,7 +22,7 @@ React (Vite, TanStack Query)  ──►  NestJS API  ──►  PostgreSQL
 Requires Docker with Compose v2. **No other setup and no `.env` file needed.**
 
 ```bash
-git clone <repo-url> && cd inventory-orders
+git clone https://github.com/Ammarbashirharuna/Fonu-Assesment.git && cd Fonu-Assesment
 docker compose up --build
 ```
 
